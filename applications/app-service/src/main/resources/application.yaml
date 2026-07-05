@@ -10,7 +10,7 @@ spring:
       enabled: true
       path: "/h2"
   profiles:
-    include: null
+    active: ${ENV:local}
 management:
   endpoints:
     web:
@@ -24,9 +24,15 @@ cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 aws:
   region: ${AWS_REGION:us-east-1}
-  dynamodb:
-    endpoint: "http://localhost:8000"
 adapter:
   dynamodb:
     tickets-table-name: ${TICKETS_TABLE_NAME:tickets}
     orders-table-name: ${ORDERS_TABLE_NAME:orders}
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+aws:
+  dynamodb:
+    endpoint: ${AWS_DYNAMODB_ENDPOINT:http://dynamodb-local:8000}

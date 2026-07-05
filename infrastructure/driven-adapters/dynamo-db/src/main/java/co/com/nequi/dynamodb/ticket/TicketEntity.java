@@ -7,11 +7,17 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 /* Enhanced DynamoDB annotations are incompatible with Lombok #1932
    https://github.com/aws/aws-sdk-java-v2/issues/1932 */
+/**
+ * Single-table item read from TICKETS_TABLE_NAME: pk=eventId, sk=ticketId
+ * (Event metadata shares the partition with sk="METADATA" and is filtered out
+ * at query time in TicketDynamoDBAdapter). Matches the physical key names
+ * written by ticket-reservation-service/ticket-purchase-service/reservation-expiry-service.
+ */
 @DynamoDbBean
 public class TicketEntity {
 
-    private String eventId;
-    private String ticketId;
+    private String pk;
+    private String sk;
     private String orderId;
     private String status;
     private long version;
@@ -22,23 +28,21 @@ public class TicketEntity {
     }
 
     @DynamoDbPartitionKey
-    @DynamoDbAttribute("eventId")
-    public String getEventId() {
-        return eventId;
+    public String getPk() {
+        return pk;
     }
 
-    public void setEventId(String eventId) {
-        this.eventId = eventId;
+    public void setPk(String pk) {
+        this.pk = pk;
     }
 
     @DynamoDbSortKey
-    @DynamoDbAttribute("ticketId")
-    public String getTicketId() {
-        return ticketId;
+    public String getSk() {
+        return sk;
     }
 
-    public void setTicketId(String ticketId) {
-        this.ticketId = ticketId;
+    public void setSk(String sk) {
+        this.sk = sk;
     }
 
     @DynamoDbAttribute("orderId")
