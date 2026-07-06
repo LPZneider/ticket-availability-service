@@ -1,12 +1,12 @@
 package co.com.nequi.dynamodb.ticket;
 
+import co.com.nequi.dynamodb.event.EventEntity;
 import co.com.nequi.model.ticket.TicketStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.reactivecommons.utils.ObjectMapper;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -26,36 +26,35 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TicketDynamoDBAdapterTest {
 
-    private static final String TABLE_NAME = "Tickets";
+    private static final String TABLE_NAME = "tickets";
 
     @Mock
-    private DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
+    private DynamoDbEnhancedAsyncClient client;
 
     @Mock
-    private ObjectMapper mapper;
-
-    @Mock
-    private DynamoDbAsyncTable<TicketEntity> ticketTable;
+    private DynamoDbAsyncTable<TicketEntity> table;
 
     private TicketDynamoDBAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        when(dynamoDbEnhancedAsyncClient.table(TABLE_NAME, TableSchema.fromBean(TicketEntity.class)))
-                .thenReturn(ticketTable);
-
-        adapter = new TicketDynamoDBAdapter(dynamoDbEnhancedAsyncClient, mapper, TABLE_NAME);
+        when(client.table(TABLE_NAME, TableSchema.fromBean(TicketEntity.class))).thenReturn(table);
+        adapter = new TicketDynamoDBAdapter(client, TABLE_NAME);
     }
 
     @Test
-    void shouldAggregateTicketsAcrossMultiplePages() {
+    void shouldAggregateTicketsAcrossMultiplePagesAndSkipEventMetadata() {
+        TicketEntity metadata = new TicketEntity();
+        metadata.setPk("event-1");
+        metadata.setSk(EventEntity.METADATA_SORT_KEY);
+
         TicketEntity pageOneTicket = entity("t1", "event-1", null, "AVAILABLE");
         TicketEntity pageTwoTicket = entity("t2", "event-1", null, "SOLD");
 
-        Page<TicketEntity> pageOne = Page.builder(TicketEntity.class).items(List.of(pageOneTicket)).build();
+        Page<TicketEntity> pageOne = Page.builder(TicketEntity.class).items(List.of(metadata, pageOneTicket)).build();
         Page<TicketEntity> pageTwo = Page.builder(TicketEntity.class).items(List.of(pageTwoTicket)).build();
 
-        when(ticketTable.query(any(QueryEnhancedRequest.class)))
+        when(table.query(any(QueryEnhancedRequest.class)))
                 .thenReturn(PagePublisher.create(SdkPublisher.adapt(Flux.just(pageOne, pageTwo))));
 
         StepVerifier.create(adapter.findByEventId("event-1"))
@@ -66,8 +65,8 @@ class TicketDynamoDBAdapterTest {
 
     private static TicketEntity entity(String ticketId, String eventId, String orderId, String status) {
         TicketEntity entity = new TicketEntity();
-        entity.setTicketId(ticketId);
-        entity.setEventId(eventId);
+        entity.setSk(ticketId);
+        entity.setPk(eventId);
         entity.setOrderId(orderId);
         entity.setStatus(status);
         entity.setVersion(1L);

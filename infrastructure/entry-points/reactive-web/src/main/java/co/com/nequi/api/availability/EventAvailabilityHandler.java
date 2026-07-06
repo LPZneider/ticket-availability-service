@@ -23,7 +23,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static co.com.nequi.api.util.constant.HandlerConstantsApi.HEADER_MESSAGE_ID;
 import static co.com.nequi.api.util.constant.HandlerConstantsApi.HEADER_REGION;
@@ -131,13 +130,11 @@ public class EventAvailabilityHandler {
     }
 
     private static EventAvailabilityResponse toResponse(EventAvailability availability) {
-        var ticketsByStatus = availability.countsByStatus().entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().name(), Map.Entry::getValue));
         return new EventAvailabilityResponse(
                 availability.eventId(),
                 availability.eventName(),
                 availability.totalTickets(),
                 availability.availableCount(),
-                ticketsByStatus);
+                Map.of());
     }
 }
