@@ -1,7 +1,7 @@
 buildscript {
 	ext {
 		cleanArchitectureVersion = '4.4.1'
-		springBootVersion = '4.0.5'
+		springBootVersion = '4.0.6'
 		sonarVersion = '7.2.3.7755'
 		jacocoVersion = '0.8.14'
 		blockHoundVersion = '1.0.16.RELEASE'

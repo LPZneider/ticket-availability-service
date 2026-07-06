@@ -5,10 +5,6 @@ spring:
     name: "TicketAvailabilityService"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     active: ${ENV:local}
 management:
@@ -20,8 +16,6 @@ management:
     health:
       probes:
         enabled: true
-cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
 aws:
   region: ${AWS_REGION:us-east-1}
 adapter:
