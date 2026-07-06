@@ -19,7 +19,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 @ContextConfiguration(classes = {RouterRest.class, EventAvailabilityHandler.class, OrderStatusHandler.class})
 @WebFluxTest
-@Import({CorsConfig.class, SecurityHeadersConfig.class, ConfigTest.MeterRegistryTestConfig.class})
+@Import({SecurityHeadersConfig.class, ConfigTest.MeterRegistryTestConfig.class})
 class ConfigTest {
 
     @TestConfiguration

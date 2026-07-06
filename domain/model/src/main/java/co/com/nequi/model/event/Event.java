@@ -13,4 +13,5 @@ public class Event {
     String venue;
     Instant date;
     int totalCapacity;
+    int availableCount;
 }
