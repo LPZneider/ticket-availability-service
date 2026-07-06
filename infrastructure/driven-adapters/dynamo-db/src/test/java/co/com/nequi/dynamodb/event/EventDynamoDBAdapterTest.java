@@ -19,50 +19,55 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class EventDynamoDBAdapterTest {
 
-    private static final String TABLE_NAME = "tickets";
-
-    @Mock
-    private DynamoDbEnhancedAsyncClient client;
-    @Mock
-    private DynamoDbAsyncTable<EventEntity> table;
+    @Mock private DynamoDbEnhancedAsyncClient client;
+    @Mock private DynamoDbAsyncTable<EventEntity> table;
 
     private EventDynamoDBAdapter adapter;
 
     @BeforeEach
     void setUp() {
-        when(client.table(TABLE_NAME, TableSchema.fromBean(EventEntity.class))).thenReturn(table);
-        adapter = new EventDynamoDBAdapter(client, TABLE_NAME);
+        when(client.table("tickets", TableSchema.fromBean(EventEntity.class))).thenReturn(table);
+        adapter = new EventDynamoDBAdapter(client, "tickets");
+    }
+
+    private EventEntity entity(int total, int available) {
+        EventEntity e = new EventEntity();
+        e.setPk("event-1"); e.setSk(EventEntity.METADATA_SORT_KEY);
+        e.setEventId("event-1"); e.setName("Concert");
+        e.setDate("2026-08-01T20:00:00Z"); e.setVenue("Main Arena");
+        e.setTotalCapacity(total); e.setAvailableCount(available);
+        return e;
     }
 
     @Test
-    void shouldFindEventByIdUsingMetadataSortKey() {
-        EventEntity entity = new EventEntity();
-        entity.setPk("event-1");
-        entity.setSk(EventEntity.METADATA_SORT_KEY);
-        entity.setEventId("event-1");
-        entity.setName("Concert");
-        entity.setDate("2026-08-01T20:00:00Z");
-        entity.setVenue("Main Arena");
-        entity.setTotalCapacity(100);
-
-        Key expectedKey = Key.builder().partitionValue("event-1").sortValue(EventEntity.METADATA_SORT_KEY).build();
-        when(table.getItem(expectedKey)).thenReturn(CompletableFuture.completedFuture(entity));
+    void shouldFindEventAndMapAvailableCount() {
+        Key key = Key.builder().partitionValue("event-1").sortValue(EventEntity.METADATA_SORT_KEY).build();
+        when(table.getItem(key)).thenReturn(CompletableFuture.completedFuture(entity(100, 75)));
 
         StepVerifier.create(adapter.findById("event-1"))
                 .assertNext(event -> {
                     assertThat(event.getEventId()).isEqualTo("event-1");
-                    assertThat(event.getName()).isEqualTo("Concert");
                     assertThat(event.getTotalCapacity()).isEqualTo(100);
+                    assertThat(event.getAvailableCount()).isEqualTo(75);
                 })
                 .verifyComplete();
     }
 
     @Test
-    void shouldCompleteEmptyWhenEventNotFound() {
-        Key expectedKey = Key.builder().partitionValue("missing").sortValue(EventEntity.METADATA_SORT_KEY).build();
-        when(table.getItem(expectedKey)).thenReturn(CompletableFuture.completedFuture(null));
+    void shouldMapZeroAvailableCount() {
+        Key key = Key.builder().partitionValue("event-1").sortValue(EventEntity.METADATA_SORT_KEY).build();
+        when(table.getItem(key)).thenReturn(CompletableFuture.completedFuture(entity(50, 0)));
 
-        StepVerifier.create(adapter.findById("missing"))
+        StepVerifier.create(adapter.findById("event-1"))
+                .assertNext(event -> assertThat(event.getAvailableCount()).isEqualTo(0))
                 .verifyComplete();
+    }
+
+    @Test
+    void shouldCompleteEmptyWhenEventNotFound() {
+        Key key = Key.builder().partitionValue("missing").sortValue(EventEntity.METADATA_SORT_KEY).build();
+        when(table.getItem(key)).thenReturn(CompletableFuture.completedFuture(null));
+
+        StepVerifier.create(adapter.findById("missing")).verifyComplete();
     }
 }

@@ -35,6 +35,7 @@ public class EventDynamoDBAdapter implements EventRepository {
                 .venue(entity.getVenue())
                 .date(Instant.parse(entity.getDate()))
                 .totalCapacity(entity.getTotalCapacity())
+                .availableCount(entity.getAvailableCount())
                 .build();
     }
 }
